@@ -4,29 +4,34 @@ import (
 	"fmt"
 	"gomnirun/core/config"
 	"os/exec"
-	"strings"
 )
 
 // Replace placeholders in the command template
-func ReplacePlaceholders(commandTemplate string, variables map[string]config.Variable) string {
+func ReplacePlaceholders(template string, variables map[string]config.Variable) []string {
+	args := []string{}
+
 	for key, variable := range variables {
-		placeholder := fmt.Sprintf("{%s}", key) // e.g., {script}, {var1}
-		commandTemplate = strings.ReplaceAll(commandTemplate, placeholder, variable.Value)
+		value := variable.Value
+
+		// Wrap value in quotes only when needed for Bash
+		if variable.Type == "string" || variable.Type == "file" {
+			args = append(args, fmt.Sprintf("-%s=%s", key, value))
+		} else {
+			args = append(args, fmt.Sprintf("-%s=%s", key, value))
+		}
 	}
-	return commandTemplate
+	return args
 }
 
-// RunScript replaces variables in the command and executes it
+// RunScript executes the script with properly formatted arguments
 func RunScript(commandTemplate string, variables map[string]config.Variable) (string, error) {
-	finalCommand := ReplacePlaceholders(commandTemplate, variables)
+	scriptArgs := ReplacePlaceholders(commandTemplate, variables)
 
-	// Split command into parts for exec.Command
-	cmdParts := strings.Fields(finalCommand)
-	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
-
+	// Command execution: Pass script name and arguments separately
+	cmd := exec.Command("bash", append([]string{"./test_script.sh"}, scriptArgs...)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("error running script: %v", err)
+		return "", fmt.Errorf("error running script: %v\n%s", err, output)
 	}
 	return string(output), nil
 }

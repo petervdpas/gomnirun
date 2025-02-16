@@ -31,7 +31,7 @@ echo -e "${BOLD}GreetingPartTwo:${RESET} $VAR2"
 echo -e "\n${BLUE}Creating a cool message...${RESET}"
 sleep 1
 
-MESSAGE="${VAR1} ${VAR2}!"
+MESSAGE="${VAR1} ${VAR2}"
 echo -e "${GREEN}✨ Here is your message: ${BOLD}${MESSAGE}${RESET}"
 
 # Simulate processing

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"gomnirun/core/config"
 	"gomnirun/core/executor"
 	"regexp"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -16,33 +18,32 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-const configFile = "config.json"
-
-// Function to strip ANSI escape codes
 func stripAnsiCodes(input string) string {
 	ansiRegex := regexp.MustCompile(`\x1B\[[0-9;]*[mK]`)
 	return ansiRegex.ReplaceAllString(input, "")
 }
 
-func main() {
-	a := app.New()
-	w := a.NewWindow("GomniRun - Script Runner")
-	w.Resize(fyne.NewSize(800, 500)) // Wider window for split layout
+func loadConfig(configFile string) config.Config {
+	conf, err := config.Load(configFile)
+	if err != nil {
+		fmt.Println("Failed to load config, using defaults.")
+		conf = config.Config{}
+	}
+	return conf
+}
 
-	// Load configuration
-	conf, _ := config.Load(configFile)
+func createCommandEntry(conf config.Config) *widget.Entry {
+	entry := widget.NewEntry()
+	entry.SetText(conf.CommandTemplate)
+	entry.MultiLine = true
+	return entry
+}
 
-	// UI Elements
-	commandEntry := widget.NewEntry()
-	commandEntry.SetText(conf.CommandTemplate)
-	commandEntry.MultiLine = true
-
-	// Variable Input Fields (Matching Type)
+func createVariableInputs(w fyne.Window, conf config.Config) (map[string]fyne.CanvasObject, *fyne.Container) {
 	varEntries := make(map[string]fyne.CanvasObject)
 	varBox := container.NewVBox()
 	for key, variable := range conf.Variables {
 		label := widget.NewLabel(key)
-
 		var inputWidget fyne.CanvasObject
 
 		switch variable.Type {
@@ -51,7 +52,6 @@ func main() {
 			entry.SetText(variable.Value)
 			varEntries[key] = entry
 			inputWidget = container.NewGridWithColumns(1, entry)
-
 		case "file":
 			entry := widget.NewEntry()
 			entry.SetText(variable.Value)
@@ -64,7 +64,6 @@ func main() {
 			})
 			varEntries[key] = entry
 			inputWidget = container.NewBorder(nil, nil, nil, filePicker, entry)
-
 		case "directory":
 			entry := widget.NewEntry()
 			entry.SetText(variable.Value)
@@ -77,34 +76,32 @@ func main() {
 			})
 			varEntries[key] = entry
 			inputWidget = container.NewBorder(nil, nil, nil, dirPicker, entry)
-
 		case "bool":
 			check := widget.NewCheck("", nil)
 			check.SetChecked(variable.Value == "true")
 			varEntries[key] = check
 			inputWidget = check
 		}
-
 		varBox.Add(container.NewVBox(label, inputWidget))
 	}
+	return varEntries, varBox
+}
 
-	// Output Area with High Contrast
+func createOutputArea() (*widget.Label, *widget.RichText, *fyne.Container) {
 	outputLabel := widget.NewLabel("Output:")
 	outputText := widget.NewRichTextFromMarkdown("**Script output will appear here...**")
 	outputText.Wrapping = fyne.TextWrapWord
 
-	// Dynamically set background and text colors based on theme
 	bgColor := theme.BackgroundColor()
-
-	// Background Rectangle
 	outputBg := canvas.NewRectangle(bgColor)
 	outputBg.FillColor = bgColor
 
-	// Use a Stack to layer the background and text
 	outputContainer := container.NewStack(outputBg, container.NewVScroll(outputText))
+	return outputLabel, outputText, outputContainer
+}
 
-	// Run Script Button
-	runButton := widget.NewButton("Run Script", func() {
+func createRunButton(w fyne.Window, conf config.Config, commandEntry *widget.Entry, varEntries map[string]fyne.CanvasObject, outputText *widget.RichText) *widget.Button {
+	return widget.NewButton("Run Script", func() {
 		conf.CommandTemplate = commandEntry.Text
 		for key, obj := range varEntries {
 			switch widget := obj.(type) {
@@ -115,11 +112,12 @@ func main() {
 			}
 		}
 
-		// Generate final command with variables replaced
-		finalCommand := executor.ReplacePlaceholders(conf.CommandTemplate, conf.Variables)
+		// Get the final command (as []string) and join it into a single string
+		finalCommandParts := executor.ReplacePlaceholders(conf.CommandTemplate, conf.Variables)
+		finalCommand := strings.Join(finalCommandParts, " ") // Convert []string to a single string
+
 		fmt.Println("Executing command:", finalCommand)
 
-		// Show final command in dialog before execution
 		dialog.ShowConfirm("Execute Command", "Executing: "+finalCommand, func(confirmed bool) {
 			if confirmed {
 				output, err := executor.RunScript(conf.CommandTemplate, conf.Variables)
@@ -127,41 +125,53 @@ func main() {
 					dialog.ShowError(err, w)
 					outputText.ParseMarkdown(fmt.Sprintf("**Error:** %s", err.Error()))
 				} else {
-					cleanOutput := stripAnsiCodes(output) // Strip ANSI color codes
+					cleanOutput := stripAnsiCodes(output)
 					outputText.ParseMarkdown(fmt.Sprintf("**Executed:** `%s`\n\n```\n%s\n```", finalCommand, cleanOutput))
 				}
 			}
 		}, w)
 
-		// Save config only if overwrite is enabled
 		if conf.Overwrite {
-			config.Save(configFile, conf)
+			config.Save("config.json", conf)
 			fmt.Println("Configuration updated and saved.")
 		} else {
 			fmt.Println("Overwrite is disabled. Changes will not be saved.")
 		}
 	})
+}
 
-	// Left Panel (Command + Parameters)
+func main() {
+	configFile := flag.String("config", "config.json", "Path to configuration file")
+	flag.Parse()
+
+	fmt.Printf("Starting GomniRun GUI Mode with config: %s...\n", *configFile)
+
+	a := app.New()
+	w := a.NewWindow("GomniRun - Script Runner")
+	w.Resize(fyne.NewSize(800, 500))
+
+	conf := loadConfig(*configFile)
+	commandEntry := createCommandEntry(conf)
+	varEntries, varBox := createVariableInputs(w, conf)
+	outputLabel, outputText, outputContainer := createOutputArea()
+	runButton := createRunButton(w, conf, commandEntry, varEntries, outputText)
+
 	leftPanel := container.NewVBox(
 		widget.NewLabel("Command Template:"),
 		commandEntry,
 		widget.NewLabel("Variables:"),
 		varBox,
-		layout.NewSpacer(), // Push Run button to the bottom
+		layout.NewSpacer(),
 		runButton,
 	)
-	leftPanelWithPadding := container.NewPadded(leftPanel) // Add padding
+	leftPanelWithPadding := container.NewPadded(leftPanel)
 
-	// Right Panel (Output, spans remaining height)
 	rightPanel := container.NewBorder(outputLabel, nil, nil, nil, outputContainer)
-	rightPanelWithPadding := container.NewPadded(rightPanel) // Add padding
+	rightPanelWithPadding := container.NewPadded(rightPanel)
 
-	// Split View (Left: Inputs, Right: Output)
 	splitView := container.NewHSplit(leftPanelWithPadding, rightPanelWithPadding)
-	splitView.SetOffset(0.4) // Adjusts split size (40% inputs, 60% output)
+	splitView.SetOffset(0.4)
 
-	// Set Content
 	w.SetContent(splitView)
 	w.ShowAndRun()
 }

@@ -1,58 +1,72 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"gomnirun/core/config"
 	"gomnirun/core/executor"
 	"log"
-	"os"
 	"strings"
 )
 
-const configFile = "config.json"
-
 func main() {
-	fmt.Println("Starting GomniRun in CLI Mode...")
+	// Accept a dynamic config file
+	configFile := flag.String("config", "config.json", "Path to configuration file")
+	flag.Parse()
 
-	// Load configuration
+	fmt.Printf("Starting GomniRun in CLI Mode with config: %s...\n", *configFile)
+
+	// Load the specified config file
+	conf := loadConfig(*configFile)
+
+	// Handle user variable updates via command-line arguments
+	updateConfigVariables(&conf, flag.Args())
+
+	// Save configuration if needed
+	saveConfig(*configFile, &conf)
+
+	// Execute the command
+	executeCommand(conf)
+}
+
+func loadConfig(configFile string) config.Config {
 	conf, err := config.Load(configFile)
 	if err != nil {
 		log.Println("No existing config found. Using defaults.")
 		conf = config.Config{}
 	}
+	return conf
+}
 
-	// Check if user provided variable updates
-	if len(os.Args) > 1 {
-		for _, arg := range os.Args[1:] {
-			if strings.Contains(arg, "=") {
-				parts := strings.SplitN(arg, "=", 2)
-				key := parts[0]
-				value := parts[1]
+func updateConfigVariables(conf *config.Config, args []string) {
+	for _, arg := range args {
+		if strings.Contains(arg, "=") {
+			parts := strings.SplitN(arg, "=", 2)
+			key, value := parts[0], parts[1]
 
-				// Update the variable if it exists in config
-				if _, exists := conf.Variables[key]; exists {
-					conf.Variables[key] = config.Variable{Type: conf.Variables[key].Type, Value: value}
-					fmt.Printf("Updated %s -> %s\n", key, value)
-				} else {
-					fmt.Printf("Warning: Variable %s not found in config.\n", key)
-				}
+			if _, exists := conf.Variables[key]; exists {
+				conf.Variables[key] = config.Variable{Type: conf.Variables[key].Type, Value: value}
+				fmt.Printf("Updated %s -> %s\n", key, value)
+			} else {
+				fmt.Printf("Warning: Variable %s not found in config.\n", key)
 			}
 		}
-
-		// Save the updated config ONLY if overwrite is true
-		if conf.Overwrite {
-			config.Save(configFile, conf)
-			fmt.Println("Configuration updated and saved.")
-		} else {
-			fmt.Println("Overwrite is disabled. Changes will not be saved.")
-		}
 	}
+}
 
-	// Generate final command with variables replaced
+func saveConfig(configFile string, conf *config.Config) {
+	if conf.Overwrite {
+		config.Save(configFile, *conf)
+		fmt.Println("Configuration updated and saved.")
+	} else {
+		fmt.Println("Overwrite is disabled. Changes will not be saved.")
+	}
+}
+
+func executeCommand(conf config.Config) {
 	finalCommand := executor.ReplacePlaceholders(conf.CommandTemplate, conf.Variables)
 	fmt.Println("Executing command:", finalCommand)
 
-	// Run the script
 	output, err := executor.RunScript(conf.CommandTemplate, conf.Variables)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
