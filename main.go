@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -17,20 +16,24 @@ func main() {
 	var mode string
 	if flag.NArg() > 0 {
 		mode = flag.Arg(0)
+	} else {
+		mode = "ui" // Default to UI mode
 	}
 
-	if mode == "cli" {
-		fmt.Printf("🔹 Launching GomniRun CLI Mode with config: %s...\n", *configFile)
-		runExecutable("cmd/cli/main.go", *configFile)
-	} else {
-		fmt.Printf("🔹 Launching GomniRun GUI Mode with config: %s...\n", *configFile)
-		runExecutable("cmd/fyne-ui/main.go", *configFile)
-	}
+	runExecutable(mode, *configFile)
 }
 
 // runExecutable compiles and runs a Go file dynamically with a config file
-func runExecutable(file string, configFile string) {
-	cmd := exec.Command("go", "run", file, "-config", configFile)
+func runExecutable(mode string, configFile string) {
+	var file string
+	if mode == "cli" {
+		file = "cmd/cli/main.go"
+	} else {
+		file = "cmd/fyne-ui/main.go"
+	}
+
+	// Ensure the correct order of arguments
+	cmd := exec.Command("go", "run", file, mode, "-config", configFile)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

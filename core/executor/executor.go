@@ -13,27 +13,33 @@ type Executor interface {
 }
 
 // GetExecutor dynamically returns the correct executor based on file extension
-func GetExecutor(scriptPath string) (Executor, error) {
+func GetExecutor(scriptPath string) (Executor, string, error) {
 	ext := strings.ToLower(filepath.Ext(scriptPath))
+
 	switch ext {
 	case ".sh":
-		return &BashExecutor{}, nil
+		return &BashExecutor{}, "Bash", nil
 	case ".ps1":
-		return &PowerShellExecutor{}, nil
+		return &PowerShellExecutor{}, "PowerShell", nil
 	case ".py":
-		return &PythonExecutor{}, nil
+		return &PythonExecutor{}, "Python", nil
 	default:
-		return nil, fmt.Errorf("unsupported script type: %s", ext)
+		return nil, "", fmt.Errorf("unsupported script type: %s", ext)
 	}
 }
 
 // RunScript dynamically selects the correct executor and runs the script
 func RunScript(commandTemplate string, variables map[string]config.Variable) (string, error) {
 	scriptPath := variables["script"].Value
-	executor, err := GetExecutor(scriptPath)
+	executor, executorName, err := GetExecutor(scriptPath)
 	if err != nil {
 		return "", err
 	}
+
+	// Log the selected executor *before* running the script
+	fmt.Printf("🔹 Selected Executor: %s for script: %s\n", executorName, scriptPath)
+
+	// Run the script
 	return executor.RunScript(commandTemplate, variables)
 }
 
