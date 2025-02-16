@@ -110,17 +110,10 @@ Update `config.json` and run the app!
 ## Built With
 
 ```sh
-# Build CLI version for Windows
-GOOS=windows GOARCH=amd64 go build -o builds/gomnirun-cli.exe cmd/cli/main.go
+go build -o builds/gomnirun main.go
+go build -o builds/gomnirun-cli ./cmd/cli/
+go build -o builds/gomnirun-ui ./cmd/fyne-ui/
 
-# Build CLI version for Linux
-GOOS=linux GOARCH=amd64 go build -o builds/gomnirun-cli cmd/cli/main.go
-
-# Build GUI version for Windows
-GOOS=windows GOARCH=amd64 go build -o builds/gomnirun-ui.exe cmd/fyne-ui/main.go
-
-# Build GUI version for Linux
-GOOS=linux GOARCH=amd64 go build -o builds/gomnirun-ui cmd/fyne-ui/main.go
 ```
 
 

@@ -2,53 +2,67 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
+	"strings"
 )
 
 func main() {
-	// Define a flag for specifying a config file
-	configFile := flag.String("config", "config.json", "Path to config file")
+	// Define flags
+	configFile := flag.String("config", "config.json", "Path to configuration file")
 	flag.Parse()
 
-	// Determine the mode (CLI or GUI)
-	var mode string
-	if flag.NArg() > 0 {
-		mode = flag.Arg(0)
-	} else {
-		mode = "ui" // Default to GUI mode
+	// Determine mode: CLI or GUI
+	mode := "ui" // Default to GUI
+	if len(flag.Args()) > 0 {
+		arg := strings.ToLower(flag.Arg(0))
+		if arg == "cli" || arg == "ui" {
+			mode = arg
+		}
 	}
 
-	runExecutable(mode, *configFile)
-}
+	// Build everything first if needed
+	checkAndBuild("cli", "./builds/gomnirun-cli", "./cmd/cli/")
+	checkAndBuild("ui", "./builds/gomnirun-ui", "./cmd/fyne-ui/")
 
-// runExecutable executes the correct binary depending on mode and OS
-func runExecutable(mode string, configFile string) {
-	var binary string
+	// Define which binary to execute
+	var binaryPath string
 	if mode == "cli" {
-		binary = "./builds/gomnirun-cli"
+		binaryPath = "./builds/gomnirun-cli"
 	} else {
-		binary = "./builds/gomnirun-ui"
+		binaryPath = "./builds/gomnirun-ui"
 	}
 
-	// On Windows, add .exe extension
-	if runtime.GOOS == "windows" {
-		binary += ".exe"
+	// Construct command with config file flag
+	cmdArgs := []string{}
+	if *configFile != "config.json" {
+		cmdArgs = append(cmdArgs, "-config", *configFile)
 	}
 
-	// Ensure the binary exists
-	if _, err := os.Stat(binary); os.IsNotExist(err) {
-		log.Fatalf("Error: Binary %s not found. Please build the project first.", binary)
-	}
-
-	cmd := exec.Command(binary, "-config", configFile)
+	// Run the correct binary
+	cmd := exec.Command(binaryPath, cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("Failed to start %s with config %s: %v", binary, configFile, err)
+		log.Fatalf("Failed to start %s: %v", binaryPath, err)
+	}
+}
+
+// checkAndBuild ensures binaries exist and builds them if missing
+func checkAndBuild(mode string, binaryPath string, sourcePath string) {
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		fmt.Printf("⚠️  Binary %s not found, building it now...\n", binaryPath)
+		buildCmd := exec.Command("go", "build", "-o", binaryPath, sourcePath)
+		buildCmd.Stdout = os.Stdout
+		buildCmd.Stderr = os.Stderr
+		err := buildCmd.Run()
+		if err != nil {
+			log.Fatalf("❌ Failed to build %s: %v", mode, err)
+		}
+		fmt.Printf("✅ Successfully built %s\n", mode)
 	}
 }
