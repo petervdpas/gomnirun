@@ -3,35 +3,52 @@ package executor
 import (
 	"fmt"
 	"gomnirun/core/config"
-	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
-// Replace placeholders in the command template
-func ReplacePlaceholders(template string, variables map[string]config.Variable) []string {
-	args := []string{}
+// Executor interface for different script execution types
+type Executor interface {
+	RunScript(commandTemplate string, variables map[string]config.Variable) (string, error)
+}
 
+// GetExecutor dynamically returns the correct executor based on file extension
+func GetExecutor(scriptPath string) (Executor, error) {
+	ext := strings.ToLower(filepath.Ext(scriptPath))
+	switch ext {
+	case ".sh":
+		return &BashExecutor{}, nil
+	case ".ps1":
+		return &PowerShellExecutor{}, nil
+	case ".py":
+		return &PythonExecutor{}, nil
+	default:
+		return nil, fmt.Errorf("unsupported script type: %s", ext)
+	}
+}
+
+// RunScript dynamically selects the correct executor and runs the script
+func RunScript(commandTemplate string, variables map[string]config.Variable) (string, error) {
+	scriptPath := variables["script"].Value
+	executor, err := GetExecutor(scriptPath)
+	if err != nil {
+		return "", err
+	}
+	return executor.RunScript(commandTemplate, variables)
+}
+
+// ReplacePlaceholders replaces placeholders in the command template
+func ReplacePlaceholders(template string, variables map[string]config.Variable) string {
 	for key, variable := range variables {
 		value := variable.Value
 
-		// Wrap value in quotes only when needed for Bash
-		if variable.Type == "string" || variable.Type == "file" {
-			args = append(args, fmt.Sprintf("-%s=%s", key, value))
-		} else {
-			args = append(args, fmt.Sprintf("-%s=%s", key, value))
+		// Wrap value in quotes if it contains spaces
+		if strings.Contains(value, " ") {
+			value = fmt.Sprintf("\"%s\"", value)
 		}
-	}
-	return args
-}
 
-// RunScript executes the script with properly formatted arguments
-func RunScript(commandTemplate string, variables map[string]config.Variable) (string, error) {
-	scriptArgs := ReplacePlaceholders(commandTemplate, variables)
-
-	// Command execution: Pass script name and arguments separately
-	cmd := exec.Command("bash", append([]string{"./test_script.sh"}, scriptArgs...)...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("error running script: %v\n%s", err, output)
+		// Replace placeholders
+		template = strings.ReplaceAll(template, fmt.Sprintf("{%s}", key), value)
 	}
-	return string(output), nil
+	return template
 }

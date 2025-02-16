@@ -113,7 +113,7 @@ func createRunButton(w fyne.Window, conf config.Config, commandEntry *widget.Ent
 		}
 
 		// Get the final command (as []string) and join it into a single string
-		finalCommandParts := executor.ReplacePlaceholders(conf.CommandTemplate, conf.Variables)
+		finalCommandParts := strings.Fields(executor.ReplacePlaceholders(conf.CommandTemplate, conf.Variables))
 		finalCommand := strings.Join(finalCommandParts, " ") // Convert []string to a single string
 
 		fmt.Println("Executing command:", finalCommand)
