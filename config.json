@@ -1,0 +1,18 @@
+{
+  "command": "bash {script} -GreetingPartOne={GreetingPartOne} -GreetingPartTwo={GreetingPartTwo}",
+  "variables": {
+    "GreetingPartOne": {
+      "type": "string",
+      "value": "hello"
+    },
+    "GreetingPartTwo": {
+      "type": "string",
+      "value": "world"
+    },
+    "script": {
+      "type": "file",
+      "value": "./test_script.sh"
+    }
+  },
+  "overwrite": true
+}
