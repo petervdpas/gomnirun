@@ -45,13 +45,13 @@ cd GomniRun
 
 ### **3️⃣ Run the App**
 
-#### GUI Mode:
+#### GUI Mode
 
 ```sh
 go run cmd/fyne-ui/main.go
 ```
 
-#### CLI Mode:
+#### CLI Mode
 
 ```sh
 go run cmd/cli/main.go
@@ -106,6 +106,23 @@ chmod +x test_script.sh
 Update `config.json` and run the app!
 
 ---
+
+## Built With
+
+```sh
+# Build CLI version for Windows
+GOOS=windows GOARCH=amd64 go build -o builds/gomnirun-cli.exe cmd/cli/main.go
+
+# Build CLI version for Linux
+GOOS=linux GOARCH=amd64 go build -o builds/gomnirun-cli cmd/cli/main.go
+
+# Build GUI version for Windows
+GOOS=windows GOARCH=amd64 go build -o builds/gomnirun-ui.exe cmd/fyne-ui/main.go
+
+# Build GUI version for Linux
+GOOS=linux GOARCH=amd64 go build -o builds/gomnirun-ui cmd/fyne-ui/main.go
+```
+
 
 ## 🌎 Contributing
 
