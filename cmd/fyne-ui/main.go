@@ -1,7 +1,6 @@
-package main
+package fyne_ui
 
 import (
-	"flag"
 	"fmt"
 	"gomnirun/core/config"
 	"gomnirun/core/executor"
@@ -21,6 +20,39 @@ import (
 func stripAnsiCodes(input string) string {
 	ansiRegex := regexp.MustCompile(`\x1B\[[0-9;]*[mK]`)
 	return ansiRegex.ReplaceAllString(input, "")
+}
+
+// RunGUI allows `main.go` to call CLI mode
+func RunGUI(conf *config.Config) {
+	fmt.Println("✅ Running GomniRun in GUI Mode...")
+
+	a := app.New()
+	w := a.NewWindow("GomniRun - Script Runner")
+	w.Resize(fyne.NewSize(800, 500))
+
+	commandEntry := createCommandEntry(*conf)
+	varEntries, varBox := createVariableInputs(w, *conf)
+	outputLabel, outputText, outputContainer := createOutputArea()
+	runButton := createRunButton(w, *conf, commandEntry, varEntries, outputText)
+
+	leftPanel := container.NewVBox(
+		widget.NewLabel("Command Template:"),
+		commandEntry,
+		widget.NewLabel("Variables:"),
+		varBox,
+		layout.NewSpacer(),
+		runButton,
+	)
+	leftPanelWithPadding := container.NewPadded(leftPanel)
+
+	rightPanel := container.NewBorder(outputLabel, nil, nil, nil, outputContainer)
+	rightPanelWithPadding := container.NewPadded(rightPanel)
+
+	splitView := container.NewHSplit(leftPanelWithPadding, rightPanelWithPadding)
+	splitView.SetOffset(0.4)
+
+	w.SetContent(splitView)
+	w.ShowAndRun()
 }
 
 func loadConfig(configFile string) config.Config {
@@ -138,40 +170,4 @@ func createRunButton(w fyne.Window, conf config.Config, commandEntry *widget.Ent
 			fmt.Println("Overwrite is disabled. Changes will not be saved.")
 		}
 	})
-}
-
-func main() {
-	configFile := flag.String("config", "config.json", "Path to configuration file")
-	flag.Parse()
-
-	fmt.Printf("Starting GomniRun GUI Mode with config: %s...\n", *configFile)
-
-	a := app.New()
-	w := a.NewWindow("GomniRun - Script Runner")
-	w.Resize(fyne.NewSize(800, 500))
-
-	conf := loadConfig(*configFile)
-	commandEntry := createCommandEntry(conf)
-	varEntries, varBox := createVariableInputs(w, conf)
-	outputLabel, outputText, outputContainer := createOutputArea()
-	runButton := createRunButton(w, conf, commandEntry, varEntries, outputText)
-
-	leftPanel := container.NewVBox(
-		widget.NewLabel("Command Template:"),
-		commandEntry,
-		widget.NewLabel("Variables:"),
-		varBox,
-		layout.NewSpacer(),
-		runButton,
-	)
-	leftPanelWithPadding := container.NewPadded(leftPanel)
-
-	rightPanel := container.NewBorder(outputLabel, nil, nil, nil, outputContainer)
-	rightPanelWithPadding := container.NewPadded(rightPanel)
-
-	splitView := container.NewHSplit(leftPanelWithPadding, rightPanelWithPadding)
-	splitView.SetOffset(0.4)
-
-	w.SetContent(splitView)
-	w.ShowAndRun()
 }

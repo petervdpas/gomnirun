@@ -3,11 +3,11 @@
   "variables": {
     "GreetingPartOne": {
       "type": "string",
-      "value": "Hi there..."
+      "value": "Hello"
     },
     "GreetingPartTwo": {
       "type": "string",
-      "value": "How are you?"
+      "value": "World"
     },
     "script": {
       "type": "file",

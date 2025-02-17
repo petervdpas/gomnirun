@@ -1,41 +1,26 @@
-package main
+package cli
 
 import (
-	"flag"
 	"fmt"
 	"gomnirun/core/config"
 	"gomnirun/core/executor"
 	"log"
+	"os"
 	"strings"
 )
 
-func main() {
-	// Accept a dynamic config file
-	configFile := flag.String("config", "config.json", "Path to configuration file")
-	flag.Parse()
-
-	fmt.Printf("Starting GomniRun in CLI Mode with config: %s...\n", *configFile)
-
-	// Load the specified config file
-	conf := loadConfig(*configFile)
+// RunCLI allows `main.go` to call CLI mode
+func RunCLI(conf *config.Config) {
+	fmt.Println("✅ Running GomniRun in CLI Mode...")
 
 	// Handle user variable updates via command-line arguments
-	updateConfigVariables(&conf, flag.Args())
+	updateConfigVariables(conf, os.Args[2:])
 
 	// Save configuration if needed
-	saveConfig(*configFile, &conf)
+	saveConfig("config.json", conf)
 
 	// Execute the command
 	executeCommand(conf)
-}
-
-func loadConfig(configFile string) config.Config {
-	conf, err := config.Load(configFile)
-	if err != nil {
-		log.Println("No existing config found. Using defaults.")
-		conf = config.Config{}
-	}
-	return conf
 }
 
 func updateConfigVariables(conf *config.Config, args []string) {
@@ -63,7 +48,7 @@ func saveConfig(configFile string, conf *config.Config) {
 	}
 }
 
-func executeCommand(conf config.Config) {
+func executeCommand(conf *config.Config) {
 	finalCommand := executor.ReplacePlaceholders(conf.CommandTemplate, conf.Variables)
 	fmt.Println("Executing command:", finalCommand)
 
