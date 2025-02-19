@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gomnirun/core/config"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -37,5 +38,6 @@ func (p *PowerShellExecutor) RunScript(commandTemplate string, variables map[str
 	if err != nil {
 		return "", fmt.Errorf("PowerShell error: %v\n%s", err, output)
 	}
+
 	return string(output), nil
 }

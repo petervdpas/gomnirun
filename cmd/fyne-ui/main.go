@@ -55,15 +55,6 @@ func RunGUI(conf *config.Config) {
 	w.ShowAndRun()
 }
 
-func loadConfig(configFile string) config.Config {
-	conf, err := config.Load(configFile)
-	if err != nil {
-		fmt.Println("Failed to load config, using defaults.")
-		conf = config.Config{}
-	}
-	return conf
-}
-
 func createCommandEntry(conf config.Config) *widget.Entry {
 	entry := widget.NewEntry()
 	entry.SetText(conf.CommandTemplate)
