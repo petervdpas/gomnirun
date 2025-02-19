@@ -16,9 +16,14 @@ func (p *PowerShellExecutor) RunScript(commandTemplate string, variables map[str
 	scriptPath := variables["script"].Value
 	args := ReplacePlaceholders(commandTemplate, variables)
 
-	// Ensure the script path is properly quoted (handles spaces in paths)
+	// Ensure script path is properly quoted if it contains spaces
 	if strings.Contains(scriptPath, " ") && !strings.HasPrefix(scriptPath, "\"") {
 		scriptPath = fmt.Sprintf("\"%s\"", scriptPath)
+	}
+
+	// Ensure all arguments are properly quoted to handle spaces
+	if strings.Contains(args, " ") && !strings.HasPrefix(args, "\"") {
+		args = fmt.Sprintf("\"%s\"", args)
 	}
 
 	var cmd *exec.Cmd
@@ -28,8 +33,9 @@ func (p *PowerShellExecutor) RunScript(commandTemplate string, variables map[str
 		fullCommand := fmt.Sprintf("& %s %s", scriptPath, args)
 		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", fullCommand)
 	} else {
-		// ✅ Linux/macOS: Use `-File` (since `pwsh` supports it correctly)
-		cmd = exec.Command("pwsh", "-ExecutionPolicy", "Bypass", "-File", scriptPath)
+		// ✅ Linux/macOS: Use `-Command "& 'script.ps1' args"` (same fix as Windows)
+		fullCommand := fmt.Sprintf("& %s %s", scriptPath, args)
+		cmd = exec.Command("pwsh", "-ExecutionPolicy", "Bypass", "-Command", fullCommand)
 	}
 
 	// Capture output
