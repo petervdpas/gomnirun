@@ -26,10 +26,8 @@ func (p *PowerShellExecutor) RunScript(commandTemplate string, variables map[str
 	fullCommand := fmt.Sprintf("& %s %s", scriptPath, args)
 
 	if runtime.GOOS == "windows" {
-		// ✅ Windows: Use `-Command "& 'script.ps1' args"` to handle spaces correctly
 		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", fullCommand)
 	} else {
-		// ✅ Linux/macOS: Use `-Command "& 'script.ps1' args"` (same fix as Windows)
 		cmd = exec.Command("pwsh", "-ExecutionPolicy", "Bypass", "-Command", fullCommand)
 	}
 
