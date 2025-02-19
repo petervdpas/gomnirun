@@ -5,7 +5,6 @@ import (
 	"gomnirun/core/config"
 	"os/exec"
 	"runtime"
-	"strings"
 )
 
 // PowerShellExecutor executes PowerShell scripts
@@ -16,14 +15,9 @@ func (p *PowerShellExecutor) RunScript(commandTemplate string, variables map[str
 	scriptPath := variables["script"].Value
 	args := ReplacePlaceholders(commandTemplate, variables)
 
-	// Ensure the script path is properly quoted (handles spaces in paths)
-	if strings.Contains(scriptPath, " ") && !strings.HasPrefix(scriptPath, "\"") {
-		scriptPath = fmt.Sprintf("\"%s\"", scriptPath)
-	}
+	fullCommand := fmt.Sprintf("& %s %s", scriptPath, args)
 
 	var cmd *exec.Cmd
-
-	fullCommand := fmt.Sprintf("& %s %s", scriptPath, args)
 
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", fullCommand)

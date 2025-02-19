@@ -46,16 +46,19 @@ func RunScript(commandTemplate string, variables map[string]config.Variable) (st
 // ReplacePlaceholders replaces placeholders in the command template
 func ReplacePlaceholders(template string, variables map[string]config.Variable) string {
 	for key, variable := range variables {
-		value := variable.Value
-
-		// Quote arguments with spaces
-		if strings.Contains(value, " ") && !strings.HasPrefix(value, "\"") {
-			value = fmt.Sprintf("\"%s\"", value)
-		}
+		value := quoteArguments(variable.Value) // Just quote all values
 
 		// Replace placeholders
 		template = strings.ReplaceAll(template, fmt.Sprintf("{%s}", key), value)
 	}
-
 	return template
+}
+
+// quoteArguments ensures all arguments containing spaces are properly quoted
+func quoteArguments(value string) string {
+	// Ensure arguments with spaces are correctly quoted
+	if strings.Contains(value, " ") && !strings.HasPrefix(value, "\"") {
+		return fmt.Sprintf("\"%s\"", value)
+	}
+	return value
 }

@@ -7,7 +7,7 @@
     },
     "GreetingPartTwo": {
       "type": "string",
-      "value": "World"
+      "value": "World of Mine"
     },
     "script": {
       "type": "file",
