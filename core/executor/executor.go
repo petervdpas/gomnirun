@@ -48,13 +48,14 @@ func ReplacePlaceholders(template string, variables map[string]config.Variable) 
 	for key, variable := range variables {
 		value := variable.Value
 
-		// Wrap value in quotes if it contains spaces
-		if strings.Contains(value, " ") {
+		// Quote arguments with spaces
+		if strings.Contains(value, " ") && !strings.HasPrefix(value, "\"") {
 			value = fmt.Sprintf("\"%s\"", value)
 		}
 
 		// Replace placeholders
 		template = strings.ReplaceAll(template, fmt.Sprintf("{%s}", key), value)
 	}
+
 	return template
 }
