@@ -23,7 +23,7 @@ func stripAnsiCodes(input string) string {
 }
 
 // RunGUI allows `main.go` to call CLI mode
-func RunGUI(conf *config.Config) {
+func RunGUI(conf *config.Config, configFile string) {
 	fmt.Println("✅ Running GomniRun in GUI Mode...")
 
 	a := app.New()
@@ -33,7 +33,7 @@ func RunGUI(conf *config.Config) {
 	commandEntry := createCommandEntry(*conf)
 	varEntries, varBox := createVariableInputs(w, *conf)
 	outputLabel, outputText, outputContainer := createOutputArea()
-	runButton := createRunButton(w, *conf, commandEntry, varEntries, outputText)
+	runButton := createRunButton(w, conf, configFile, commandEntry, varEntries, outputText)
 
 	leftPanel := container.NewVBox(
 		widget.NewLabel("Command Template:"),
@@ -123,7 +123,7 @@ func createOutputArea() (*widget.Label, *widget.RichText, *fyne.Container) {
 	return outputLabel, outputText, outputContainer
 }
 
-func createRunButton(w fyne.Window, conf config.Config, commandEntry *widget.Entry, varEntries map[string]fyne.CanvasObject, outputText *widget.RichText) *widget.Button {
+func createRunButton(w fyne.Window, conf *config.Config, configFile string, commandEntry *widget.Entry, varEntries map[string]fyne.CanvasObject, outputText *widget.RichText) *widget.Button {
 	return widget.NewButton("Run Script", func() {
 		conf.CommandTemplate = commandEntry.Text
 		for key, obj := range varEntries {
@@ -154,9 +154,10 @@ func createRunButton(w fyne.Window, conf config.Config, commandEntry *widget.Ent
 			}
 		}, w)
 
+		// ✅ Save using the correct config file!
 		if conf.Overwrite {
-			config.Save("config.json", conf)
-			fmt.Println("Configuration updated and saved.")
+			config.Save(configFile, *conf)
+			fmt.Println("Configuration updated and saved to:", configFile)
 		} else {
 			fmt.Println("Overwrite is disabled. Changes will not be saved.")
 		}

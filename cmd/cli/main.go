@@ -10,17 +10,17 @@ import (
 )
 
 // RunCLI allows `main.go` to call CLI mode
-func RunCLI(conf *config.Config) {
-	fmt.Println("✅ Running GomniRun in CLI Mode...")
+func RunCLI(conf *config.Config, configFile string) {
+    fmt.Println("✅ Running GomniRun in CLI Mode...")
 
-	// Handle user variable updates via command-line arguments
-	updateConfigVariables(conf, os.Args[2:])
+    // Handle user variable updates via command-line arguments
+    updateConfigVariables(conf, os.Args[2:])
 
-	// Save configuration if needed
-	saveConfig("config.json", conf)
+    // ✅ Save configuration to the correct file
+    saveConfig(configFile, conf)
 
-	// Execute the command
-	executeCommand(conf)
+    // Execute the command
+    executeCommand(conf)
 }
 
 func updateConfigVariables(conf *config.Config, args []string) {

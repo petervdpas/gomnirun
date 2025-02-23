@@ -5,9 +5,9 @@ import (
 	"log"
 	"strings"
 
-	"gomnirun/core/config"
 	"gomnirun/cmd/cli"
-	"gomnirun/cmd/fyne-ui"
+	fyne_ui "gomnirun/cmd/fyne-ui"
+	"gomnirun/core/config"
 )
 
 func main() {
@@ -32,8 +32,8 @@ func main() {
 
 	// Run CLI or GUI directly
 	if mode == "cli" {
-		cli.RunCLI(&conf)
+		cli.RunCLI(&conf, *configFile)
 	} else {
-		fyne_ui.RunGUI(&conf)
+		fyne_ui.RunGUI(&conf, *configFile)
 	}
 }
